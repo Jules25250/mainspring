@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mainspring</title>
+<meta name="description" content="The day's watch stories from the publications you read, in one place.">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mainspring">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width column on white. Lead story with its cover photo, a two-up grid of the latest,
+   then rows by day with a thumbnail; the reader opens as a full-screen sheet; tabs live at the bottom. */
+:root {
+  --bg: #FFFFFF;
+  --ink: #0F1012;
+  --ink-2: #565A61;
+  --ink-3: #93989F;
+  --rule: rgba(15, 16, 18, 0.09);
+  --accent: #2B3E9F;            /* blued steel */
+  --accent-ink: #FFFFFF;
+  --chip: #F2F2F0;
+  --chip-on: #0F1012;
+  --chip-on-ink: #FFFFFF;
+  --ph: #EEEEEC;                /* photo placeholder */
+  --bar: rgba(255, 255, 255, 0.9);
+  --lume: #4E8A2B;
+  --dot-l: 0.6;
+  --f-display: "Bodoni Moda", "Bodoni 72", Didot, "Times New Roman", serif;
+  --f-ui: "Schibsted Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --gl: max(20px, env(safe-area-inset-left, 0px));
+  --gr: max(20px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); }
+html.lock, html.lock body { overflow: hidden; }
+body { color: var(--ink); font: 16px/1.5 var(--f-ui); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.app { max-width: 480px; margin: 0 auto; padding-left: var(--gl); padding-right: var(--gr); padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+/* ---------- Top bar ---------- */
+.bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl));
+  padding: calc(env(safe-area-inset-top, 0px) + 7px) var(--gr) 7px var(--gl);
+  background: var(--bar);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px);
+  border-bottom: 1px solid transparent; transition: border-color .2s;
+}
+.bar.scrolled { border-bottom-color: var(--rule); }
+.brand { display: flex; align-items: center; gap: 9px; }
+.dial { width: 24px; height: 24px; color: var(--ink); }
+.dial .hand { transform-box: view-box; transform-origin: 16px 16px; }
+.dial .sec { animation: sweep 60s linear infinite; }
+@keyframes sweep { to { transform: rotate(360deg); } }
+.wordmark { font-family: var(--f-display); font-optical-sizing: auto; font-size: 21px; font-weight: 500; letter-spacing: .005em; }
+.icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: var(--ink); }
+.icon-btn svg { width: 21px; height: 21px; }
+
+/* ---------- View header ---------- */
+.hd { padding-block: 16px 4px; }
+.eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 7px; margin: 0; }
+.ttl { font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 40px; line-height: 1.02; letter-spacing: -.01em; margin: 6px 0; }
+.sub { margin: 0; font-size: 14.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.sub b { color: var(--ink); font-weight: 600; }
+.search { margin-top: 14px; position: relative; }
+.search input { width: 100%; font: 16px var(--f-ui); color: var(--ink); background: var(--chip); border: 0; border-radius: 12px; padding: 11px 14px 11px 40px; }
+.search input::placeholder { color: var(--ink-3); }
+.search svg { position: absolute; left: 13px; top: 50%; translate: 0 -50%; width: 17px; height: 17px; color: var(--ink-3); }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 16px calc(-1 * var(--gr)) 0 calc(-1 * var(--gl)); padding: 0 var(--gr) 2px var(--gl); }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 13.5px; font-weight: 500; color: var(--ink); background: var(--chip); border-radius: 999px; padding: 7px 13px; }
+.chip .c { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+.chip[aria-pressed="true"] .c { color: var(--chip-on-ink); opacity: .6; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: oklch(var(--dot-l) 0.13 var(--h, 240)); flex: none; }
+.stack { display: inline-flex; }
+.stack .dot { box-shadow: 0 0 0 1.5px var(--bg); }
+.stack .dot + .dot { margin-left: -2px; }
+
+/* ---------- Photos ---------- */
+.ph { position: relative; display: block; overflow: hidden; background: var(--ph); border-radius: 14px; max-width: 100%; }
+.ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ph.gone img { display: none; }
+.ph.gone::after { content: attr(data-label); position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; text-align: center; font-family: var(--f-display); font-style: italic; font-size: 17px; color: var(--ink-3); }
+.ph-32 { aspect-ratio: 3 / 2; }
+.ph-43 { aspect-ratio: 4 / 3; }
+.pill { position: absolute; left: 9px; bottom: 9px; display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #fff; background: rgba(10, 10, 12, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 999px; padding: 4px 9px 4px 7px; }
+.pill .stack .dot { box-shadow: 0 0 0 1.5px rgba(20, 20, 22, .9); --dot-l: 0.74; }
+
+/* ---------- Lead ---------- */
+.lead { display: block; width: 100%; margin-top: 22px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
+.lead .ph { border-radius: 18px; margin-bottom: 16px; }
+.lead-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+.lead-title { display: block; font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 32px; line-height: 1.07; letter-spacing: -.01em; margin-top: 10px; text-wrap: balance; }
+.lead-brief { display: block; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); margin-top: 10px; }
+.lead-cover { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+.lead-cover span { display: inline-flex; align-items: center; gap: 6px; }
+.why { display: block; font-size: 13px; color: var(--accent); margin-top: 10px; }
+
+/* ---------- Sections ---------- */
+.sec { display: flex; align-items: baseline; justify-content: space-between; margin: 36px 0 14px; }
+.sec h2 { font-family: var(--f-display); font-optical-sizing: auto; font-style: italic; font-weight: 400; font-size: 25px; margin: 0; }
+.sec span { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---------- Tiles ---------- */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; }
+.tile { display: block; min-width: 0; align-self: start; }
+.t-src { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.t-title { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 16.5px; line-height: 1.22; margin-top: 5px; }
+.t-time { display: block; font-size: 12.5px; color: var(--ink-3); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Rows ---------- */
+.row { display: flex; gap: 16px; align-items: flex-start; width: 100%; padding-block: 16px; border-top: 1px solid var(--rule); }
+.row:first-child { border-top: 0; padding-top: 2px; }
+.row .txt { flex: 1; min-width: 0; }
+.row .ph { flex: none; width: 88px; height: 88px; border-radius: 12px; }
+.row .ph.gone { display: none; }
+.r-src { display: flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.r-src .t { font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.r-title-sm { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 18.5px; line-height: 1.2; margin-top: 6px; }
+.r-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+.r-foot .why { margin: 0; display: inline; }
+.is-read .r-title-sm, .is-read .t-title { color: var(--ink-2); font-weight: 400; }
+.new { width: 6px; height: 6px; border-radius: 50%; background: var(--lume); flex: none; }
+.mk { color: var(--accent); display: inline-flex; gap: 3px; vertical-align: -1px; }
+.mk svg { width: 12px; height: 12px; }
+.status { margin-top: 40px; font-size: 13px; color: var(--ink-3); text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ---------- Empty & loading ---------- */
+.empty { padding-block: 40px 20px; }
+.empty h2 { font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 26px; margin: 0 0 8px; }
+.empty p { margin: 0; color: var(--ink-2); }
+.ghost { border-radius: 4px; background: var(--chip); margin-top: 14px; height: 14px; }
+
+/* ---------- Taste ---------- */
+.t-sec { margin-top: 34px; }
+.t-sec h3 { font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 6px; }
+.tw { display: grid; grid-template-columns: minmax(0, 1fr) 64px 28px; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+.tw .l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tw .ty { font-size: 12px; color: var(--ink-3); margin-left: 6px; }
+.meter { height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.meter.neg i { background: var(--ink-3); }
+.x { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-3); }
+.x svg { width: 12px; height: 12px; }
+.note { font-size: 13.5px; color: var(--ink-3); margin: 8px 0 0; }
+.seeds { display: flex; flex-wrap: wrap; gap: 8px; }
+.seeds .chip { padding-right: 6px; }
+.seeds .chip button { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-3); }
+.seeds svg { width: 10px; height: 10px; }
+.pub { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+.pub label { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
+.switch { position: relative; width: 44px; height: 26px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch i { position: absolute; inset: 0; border-radius: 999px; background: #E3E3E0; transition: background .2s; pointer-events: none; }
+.switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+.switch input:checked + i { background: var(--accent); }
+.switch input:checked + i::after { transform: translateX(18px); }
+.switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+.plain-btn { margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--accent); }
+
+/* ---------- Tab bar ---------- */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bar); -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px); border-top: 1px solid var(--rule); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.tabbar-in { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+.tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 8px; font-size: 10.5px; font-weight: 500; color: var(--ink-3); text-align: center; }
+.tab svg { width: 24px; height: 24px; }
+.tab[aria-selected="true"] { color: var(--ink); }
+.tab .n { font-variant-numeric: tabular-nums; }
+
+/* ---------- Reader sheet ---------- */
+.sheet { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; overscroll-behavior: contain; transform: translateY(100%); visibility: hidden; transition: transform .42s cubic-bezier(.2, .85, .2, 1), visibility 0s linear .42s; }
+.sheet.open { transform: none; visibility: visible; transition: transform .42s cubic-bezier(.2, .85, .2, 1); }
+.sheet-in { max-width: 480px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
+.r-top { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; padding: calc(env(safe-area-inset-top, 0px) + 8px) var(--gr) 8px var(--gl); background: var(--bar); -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px); }
+.r-close { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: var(--ink); }
+.r-close svg { width: 15px; height: 15px; }
+.r-hero { border-radius: 0; }
+.r-hero.gone { display: none; }
+.r-body { padding: 20px var(--gr) 32px var(--gl); flex: 1; }
+.r-title { font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 34px; line-height: 1.07; letter-spacing: -.008em; margin: 12px 0; text-wrap: balance; }
+.r-by { font-size: 14px; color: var(--ink-2); margin: 0; font-variant-numeric: tabular-nums; }
+.r-brief { font-size: 19px; line-height: 1.55; margin: 22px 0 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.tags .chip { font-size: 13px; padding: 6px 12px; }
+.r-sec { margin-top: 36px; }
+.r-sec h3 { font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 4px; }
+.take { display: block; width: 100%; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.take .r-src { margin-bottom: 4px; }
+.take .tt { font-family: var(--f-display); font-optical-sizing: auto; font-weight: 500; font-size: 17px; line-height: 1.25; }
+.take .ta { display: block; font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+.r-why { font-size: 13.5px; color: var(--ink-2); margin-top: 26px; }
+.r-why b { color: var(--ink); font-weight: 600; }
+.r-bar { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 10px var(--gr) calc(10px + env(safe-area-inset-bottom, 0px)) var(--gl); background: var(--bar); -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px); border-top: 1px solid var(--rule); }
+.act { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 50%; color: var(--ink); background: var(--chip); }
+.act svg { width: 20px; height: 20px; }
+.act[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+.go { flex: 1; min-width: 0; height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--accent); color: var(--accent-ink); text-decoration: none; border-radius: 999px; font-size: 15px; font-weight: 600; padding: 0 18px; white-space: nowrap; overflow: hidden; }
+.go span { overflow: hidden; text-overflow: ellipsis; }
+.go svg { width: 18px; height: 18px; flex: none; }
+
+/* ---------- Toast ---------- */
+.toast { position: fixed; left: 50%; translate: -50% 0; z-index: 70; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; background: var(--ink); color: var(--bg); font-size: 14px; padding: 11px 12px 11px 16px; border-radius: 14px; max-width: calc(100vw - 32px); }
+.toast button { font-weight: 600; color: var(--bg); text-decoration: underline; text-underline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dial .sec { animation: none; display: none; }
+  .sheet, .sheet.open { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar" id="bar">
+    <button class="brand" data-view="today" aria-label="Mainspring, today">
+      <svg class="dial" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <g id="ticks"></g>
+        <line class="hand" id="hh" x1="16" y1="17.5" x2="16" y2="9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="hand" id="mh" x1="16" y1="18" x2="16" y2="5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <line class="hand sec" id="sh" x1="16" y1="19.5" x2="16" y2="4" fill="none" stroke="var(--accent)" stroke-width="0.9" stroke-linecap="round"/>
+        <circle cx="16" cy="16" r="1.6" fill="var(--accent)"/>
+      </svg>
+      <span class="wordmark">Mainspring</span>
+    </button>
+    <button class="icon-btn" data-act="search" aria-label="Search stories">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <main id="view" aria-live="polite">
+    <div class="hd"><p class="eyebrow" id="boot-date"></p><h1 class="ttl">Today</h1><p class="sub">Winding up today's stories…</p></div>
+    <div class="ghost" style="height:220px;border-radius:18px;margin-top:22px"></div><div class="ghost" style="width:45%"></div><div class="ghost" style="height:28px;width:92%"></div><div class="ghost" style="height:28px;width:70%;margin-top:8px"></div>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="Sections">
+  <div class="tabbar-in" role="tablist">
+    <button class="tab" role="tab" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2" stroke-linecap="round" stroke-linejoin="round"/></svg>Today</button>
+    <button class="tab" role="tab" data-view="foryou"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.1c0 5.1-7 9.4-7 9.4Z" stroke-linejoin="round"/></svg>For you</button>
+    <button class="tab" role="tab" data-view="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6.5 4h11v16l-5.5-3.8L6.5 20V4Z" stroke-linejoin="round"/></svg><span>Saved<span class="n" id="saved-n"></span></span></button>
+    <button class="tab" role="tab" data-view="taste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7.5h9M18 7.5h2M4 16.5h3M11 16.5h9" stroke-linecap="round"/><circle cx="15.5" cy="7.5" r="2.3"/><circle cx="8.5" cy="16.5" r="2.3"/></svg>Taste</button>
+  </div>
+</nav>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Story"><div class="sheet-in" id="sheet-in"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ================= Configuration ================= */
+  let SOURCES = {
+    fratello: { name: "Fratello", hue: 28 }, ablogtowatch: { name: "aBlogtoWatch", hue: 205 }, timeandtide: { name: "Time+Tide", hue: 165 },
+    monochrome: { name: "Monochrome", hue: 265 }, sjx: { name: "SJX", hue: 5 }, wornandwound: { name: "Worn & Wound", hue: 95 },
+    revolution: { name: "Revolution", hue: 335 }, deployant: { name: "Deployant", hue: 60 }, watchonista: { name: "Watchonista", hue: 300 },
+    quillandpad: { name: "Quill & Pad", hue: 135 }, watchpro: { name: "WatchPro", hue: 230 }, teddybaldassarre: { name: "Teddy Baldassarre", hue: 182 },
+    jackforster: { name: "Jack Forster", hue: 318 },
+  };
+  const DEFAULT_SEED = { "brand:Omega": 1, "brand:Nomos": 1, "brand:Rolex": 0.7, "topic:Dials & métiers d'art": 0.7 };
+  const FACTOR = { brand: 1, topic: 0.6, src: 0.35, kind: 0.25 };
+  const TYPE_LABEL = { brand: "Brand", topic: "Topic", src: "Publication", kind: "Format" };
+  const VIEWS = ["today", "foryou", "saved", "taste"];
+  const ICON = {
+    heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.1c0 5.1-7 9.4-7 9.4Z" stroke-linejoin="round"/></svg>',
+    heartFill: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.1c0 5.1-7 9.4-7 9.4Z"/></svg>',
+    pass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M6.8 17.2 17.2 6.8"/></svg>',
+    save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6.5 4h11v16l-5.5-3.8L6.5 20V4Z" stroke-linejoin="round"/></svg>',
+    saveFill: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.5 4h11v16l-5.5-3.8L6.5 20V4Z"/></svg>',
+    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    close: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round"/></svg>',
+    x: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke-linecap="round"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5" stroke-linecap="round"/></svg>',
+  };
+
+  /* ================= Storage (on this phone only) ================= */
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("ms." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem("ms." + k, JSON.stringify(v)); } catch (e) {} },
+  };
+
+  /* ================= State ================= */
+  const S = {
+    view: VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : store.get("view", "today"),
+    source: null, q: "", searchOpen: false, sel: null,
+    articles: [], byId: new Map(),
+    reactions: new Map(Object.entries(store.get("reactions", {}))),
+    prefs: store.get("prefs", null) || { seed: { ...DEFAULT_SEED }, ignore: [], hidden: [] },
+    feed: null, loadedAt: 0, loaded: false, failed: false,
+    w: {}, stats: { likes: 0, passes: 0, saves: 0, reads: 0 }, order: [],
+    lastSeen: store.get("lastSeen", 0),
+  };
+  if (!VIEWS.includes(S.view)) S.view = "today";
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const src = (k) => SOURCES[k] || { name: k || "Unknown", hue: 240 };
+
+  /* ================= Time ================= */
+  const t = (iso) => Date.parse(iso) || 0;
+  const pad = (n) => String(n).padStart(2, "0");
+  const dayKey = (ms) => { const d = new Date(ms); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+  const hm = (ms) => { const d = new Date(ms); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+  const shortDate = (ms) => new Date(ms).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const longDate = (ms) => new Date(ms).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  function dayName(ms) { const k = dayKey(ms), now = Date.now(); if (k === dayKey(now)) return "Today"; if (k === dayKey(now - 864e5)) return "Yesterday"; return new Date(ms).toLocaleDateString("en-GB", { weekday: "long" }); }
+  function rel(ms) {
+    const m = (Date.now() - ms) / 6e4;
+    if (m < 1) return "Just now"; if (m < 60) return Math.round(m) + " min ago"; if (m < 1440) return Math.round(m / 60) + "h ago";
+    if (m < 10080) return new Date(ms).toLocaleDateString("en-GB", { weekday: "long" }); return shortDate(ms);
+  }
+
+  /* ================= Taste model ================= */
+  function tagsOf(a) {
+    const out = [];
+    if (a.source) out.push("src:" + a.source);
+    (a.brands || []).forEach((b) => out.push("brand:" + b));
+    (a.topics || []).forEach((x) => out.push("topic:" + x));
+    if (a.kind) out.push("kind:" + a.kind);
+    return out;
+  }
+  const tagType = (tag) => tag.slice(0, tag.indexOf(":"));
+  const tagLabel = (tag) => { const ty = tagType(tag), v = tag.slice(ty.length + 1); return ty === "src" ? src(v).name : v; };
+  function computeWeights() {
+    const raw = {}, stats = { likes: 0, passes: 0, saves: 0, reads: 0 };
+    for (const [id, r] of S.reactions) {
+      const a = S.byId.get(id) || r.a; if (!a) continue;
+      let s = 0;
+      if (r.v === 1) { s += 1; stats.likes++; }
+      if (r.v === -1) { s -= 1.4; stats.passes++; }
+      if (r.saved) { s += 0.6; stats.saves++; }
+      if (r.read) { stats.reads++; if (!r.v) s += 0.12; }
+      if (!s) continue;
+      for (const tag of tagsOf(a)) raw[tag] = (raw[tag] || 0) + s;
+    }
+    for (const tag in S.prefs.seed || {}) raw[tag] = (raw[tag] || 0) + S.prefs.seed[tag] * 2;
+    const ign = new Set(S.prefs.ignore || []), w = {};
+    for (const tag in raw) if (!ign.has(tag)) w[tag] = Math.tanh(raw[tag] / 3);
+    S.w = w; S.stats = stats;
+  }
+  function affinity(a) { let s = 0; for (const tag of tagsOf(a)) s += (S.w[tag] || 0) * (FACTOR[tagType(tag)] || 0.3); return Math.tanh(s); }
+  function score(a, takes) {
+    const fresh = Math.exp(-Math.max(0, (Date.now() - t(a.published)) / 36e5) / 40);
+    return 0.5 * fresh + 0.35 * affinity(a) + 0.15 * Math.min(1, ((takes || 1) - 1) / 4) - (S.reactions.get(a.id)?.read ? 0.12 : 0);
+  }
+  function why(a) {
+    return tagsOf(a).map((tag) => [tag, (S.w[tag] || 0) * (FACTOR[tagType(tag)] || 0.3)]).filter(([, v]) => v > 0.12)
+      .sort((x, y) => y[1] - x[1]).slice(0, 2).map(([tag]) => tagLabel(tag));
+  }
+
+  /* ================= Derived lists ================= */
+  const textOf = (a) => a.brief || a.teaser || "";
+  function visible({ applyFilters = true } = {}) {
+    const hidden = new Set(S.prefs.hidden || []);
+    let list = S.articles.filter((a) => !hidden.has(a.source) && S.reactions.get(a.id)?.v !== -1);
+    if (!applyFilters) return list;
+    if (S.source) list = list.filter((a) => a.source === S.source);
+    if (S.q) { const q = S.q.toLowerCase(); list = list.filter((a) => [a.title, textOf(a), a.author, src(a.source).name, ...(a.brands || []), ...(a.topics || []), a.kind].join(" ").toLowerCase().includes(q)); }
+    return list;
+  }
+  function group(list) {
+    const m = new Map();
+    for (const a of list) { const k = a.story ? "s:" + a.story : "a:" + a.id; if (!m.has(k)) m.set(k, []); m.get(k).push(a); }
+    return [...m.values()].map((items) => {
+      items.sort((x, y) => t(y.published) - t(x.published));
+      const primary = items.slice().sort((x, y) => (affinity(y) - affinity(x)) || ((y.image ? 1 : 0) - (x.image ? 1 : 0)) || (t(y.published) - t(x.published)))[0];
+      return { items, primary, newest: t(items[0].published), score: Math.max(...items.map((a) => score(a, items.length))) };
+    });
+  }
+  const takesOf = (a) => (a.story ? S.articles.filter((x) => x.story === a.story && x.id !== a.id) : []);
+  const single = (a) => ({ items: [a], primary: a, newest: t(a.published) });
+
+  /* ================= Rendering pieces ================= */
+  const dotsHTML = (items, max = 4) => '<span class="stack">' + [...new Set(items.map((x) => x.source))].slice(0, max).map((k) => '<i class="dot" style="--h:' + src(k).hue + '"></i>').join("") + "</span>";
+  const isNew = (a) => S.lastSeen && t(a.added) > S.lastSeen && !S.reactions.get(a.id)?.read;
+  function marks(a) {
+    const r = S.reactions.get(a.id); let h = "";
+    if (r?.v === 1) h += ICON.heartFill; if (r?.saved) h += ICON.saveFill;
+    return h ? '<span class="mk" aria-label="' + [r?.v === 1 ? "liked" : "", r?.saved ? "saved" : ""].filter(Boolean).join(", ") + '">' + h + "</span>" : "";
+  }
+  function photo(a, cls, extra = "", eager = false) {
+    const label = esc(src(a.source).name);
+    if (!a.image) return '<span class="ph ' + cls + ' gone" data-label="' + label + '">' + extra + "</span>";
+    return '<span class="ph ' + cls + '" data-label="' + label + '"><img src="' + esc(a.image) + '" alt="" referrerpolicy="no-referrer" decoding="async"' + (eager ? "" : ' loading="lazy"') + ">" + extra + "</span>";
+  }
+  function leadHTML(g, label, whyLine) {
+    const a = g.primary; S.order.push(a.id);
+    const cover = g.items.length > 1 ? '<span class="lead-cover">' + [...new Set(g.items.map((x) => x.source))].map((k) => '<span><i class="dot" style="--h:' + src(k).hue + '"></i>' + esc(src(k).name) + "</span>").join("") + "</span>" : "";
+    return '<button class="lead" data-id="' + esc(a.id) + '">' + (a.image ? photo(a, "ph-32", "", true) : "") +
+      '<span class="lead-meta">' + (g.items.length > 1 ? dotsHTML(g.items) : '<i class="dot" style="--h:' + src(a.source).hue + '"></i>') + esc(label) + "</span>" +
+      '<span class="lead-title" role="heading" aria-level="2">' + esc(a.title) + "</span>" +
+      (textOf(a) ? '<span class="lead-brief">' + esc(textOf(a)) + "</span>" : "") + cover +
+      (whyLine ? '<span class="why">' + esc(whyLine) + "</span>" : "") + "</button>";
+  }
+  function tileHTML(g) {
+    const a = g.primary, s = src(a.source), n = g.items.length; S.order.push(a.id);
+    const pill = n > 1 ? '<span class="pill">' + dotsHTML(g.items, 3) + n + " takes</span>" : "";
+    return '<button class="tile' + (S.reactions.get(a.id)?.read ? " is-read" : "") + '" data-id="' + esc(a.id) + '">' + photo(a, "ph-43", pill) +
+      '<span class="t-src">' + (isNew(a) ? '<i class="new"></i>' : '<i class="dot" style="--h:' + s.hue + '"></i>') + esc(s.name) + "</span>" +
+      '<span class="t-title">' + esc(a.title) + "</span>" + '<span class="t-time">' + esc(rel(g.newest)) + " " + marks(a) + "</span></button>";
+  }
+  function rowHTML(g, opts = {}) {
+    const a = g.primary, s = src(a.source), others = g.items.filter((x) => x !== a); S.order.push(a.id);
+    let foot = "";
+    if (others.length) { const names = [...new Set(others.map((x) => src(x.source).name))]; foot += dotsHTML(others, 3) + "Also in " + esc(names.slice(0, 2).join(", ")) + (names.length > 2 ? " +" + (names.length - 2) : ""); }
+    if (opts.why) { const w = why(a); if (w.length) foot += (foot ? " · " : "") + '<span class="why">You like ' + esc(w.join(" & ")) + "</span>"; }
+    const m = marks(a); if (m) foot += (foot ? " " : "") + m;
+    return '<button class="row' + (S.reactions.get(a.id)?.read ? " is-read" : "") + '" data-id="' + esc(a.id) + '"><span class="txt">' +
+      '<span class="r-src">' + (isNew(a) ? '<i class="new"></i>' : '<i class="dot" style="--h:' + s.hue + '"></i>') + esc(s.name) + '<span class="t">· ' + esc(opts.rel ? rel(t(a.published)) : hm(t(a.published))) + "</span></span>" +
+      '<span class="r-title-sm" role="heading" aria-level="3">' + esc(a.title) + "</span>" + (foot ? '<span class="r-foot">' + foot + "</span>" : "") + "</span>" +
+      (a.image ? photo(a, "") : "") + "</button>";
+  }
+  function daySections(groups, opts = {}) {
+    const byDay = new Map();
+    for (const g of groups) { const k = dayKey(g.newest); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(g); }
+    let h = "";
+    for (const [k, gs] of byDay) {
+      const name = k === dayKey(Date.now()) && opts.todayLabel ? opts.todayLabel : dayName(gs[0].newest);
+      h += '<div class="sec"><h2>' + esc(name) + "</h2><span>" + esc(shortDate(gs[0].newest)) + "</span></div><div>" + gs.map((g) => rowHTML(g, opts)).join("") + "</div>";
+    }
+    return h;
+  }
+  function chipsHTML() {
+    const now = Date.now(), hidden = new Set(S.prefs.hidden || []), counts = {};
+    for (const a of S.articles) if (now - t(a.published) < 864e5) counts[a.source] = (counts[a.source] || 0) + 1;
+    const keys = Object.keys(SOURCES).filter((k) => !hidden.has(k)).sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+    return '<div class="chips" role="group" aria-label="Filter by publication"><button class="chip" data-src="" aria-pressed="' + !S.source + '">All</button>' +
+      keys.map((k) => '<button class="chip" data-src="' + k + '" aria-pressed="' + (S.source === k) + '"><i class="dot" style="--h:' + src(k).hue + '"></i>' + esc(src(k).name) + (counts[k] ? '<span class="c">' + counts[k] + "</span>" : "") + "</button>").join("") + "</div>";
+  }
+  const searchHTML = () => (!S.searchOpen && !S.q ? "" : '<div class="search">' + ICON.search + '<input id="q" type="search" enterkeyhint="search" placeholder="Brands, references, writers" aria-label="Search stories" autocomplete="off" value="' + esc(S.q) + '"></div>');
+  function statusLine() {
+    if (!S.feed?.generated) return "";
+    const failed = Object.entries(S.feed.status || {}).filter(([, s]) => !s.ok).map(([k]) => src(k).name);
+    return '<p class="status">Updated ' + esc(rel(t(S.feed.generated)).toLowerCase()) + " · checks for new stories every two hours" + (failed.length ? "<br>Couldn't reach " + esc(failed.join(", ")) + " last time" : "") + "</p>";
+  }
+  const emptyHTML = (title, body) => '<div class="empty"><h2>' + esc(title) + "</h2><p>" + body + "</p></div>";
+
+  /* ================= Views ================= */
+  function viewToday() {
+    const now = Date.now(), list = visible({ applyFilters: false });
+    const todayN = list.filter((a) => dayKey(t(a.published)) === dayKey(now)).length;
+    const pubs = new Set(list.filter((a) => now - t(a.published) < 864e5).map((a) => a.source)).size;
+    return '<div class="hd"><p class="eyebrow">' + esc(longDate(now)) + '</p><h1 class="ttl">Today</h1><p class="sub"><b>' + todayN + "</b> " + (todayN === 1 ? "story" : "stories") + " so far from " + pubs + " publications</p></div>" +
+      searchHTML() + chipsHTML() + '<div id="feed">' + todayFeed() + "</div>";
+  }
+  function todayFeed() {
+    const now = Date.now(), list = visible();
+    if (S.source || S.q) {
+      const label = [S.source ? src(S.source).name : "", S.q ? "“" + S.q + "”" : ""].filter(Boolean).join(" · ");
+      let h = '<div class="sec"><h2>' + esc(label) + "</h2><span>" + list.length + (list.length === 1 ? " story" : " stories") + "</span></div>";
+      return list.length ? h + "<div>" + list.map((a) => rowHTML(single(a), { rel: true })).join("") + "</div>" : h + emptyHTML("Nothing matches", "Try a brand or a reference, or clear the filter.");
+    }
+    const groups = group(list).sort((x, y) => y.newest - x.newest);
+    if (!groups.length) return emptyHTML("No stories yet", "New stories arrive every two hours.");
+    const recent = groups.filter((g) => now - g.newest < 36 * 36e5);
+    const lead = recent.slice().sort((x, y) => (y.items.length - x.items.length) || (y.score - x.score))[0] || groups[0];
+    const n = lead.items.length;
+    let h = leadHTML(lead, n > 1 ? "Most covered · " + n + " publications" : "Top story · " + src(lead.primary.source).name);
+    const rest = groups.filter((g) => g !== lead);
+    const latest = rest.slice(0, 6);
+    h += '<div class="sec"><h2>Latest</h2><span></span></div><div class="grid">' + latest.map(tileHTML).join("") + "</div>";
+    h += daySections(rest.slice(6), { todayLabel: "Earlier today" });
+    return h + statusLine();
+  }
+  function viewForYou() {
+    const now = Date.now();
+    const groups = group(visible().filter((a) => now - t(a.published) < 7 * 864e5)).sort((x, y) => y.score - x.score).slice(0, 40);
+    const learned = S.stats.likes + S.stats.passes + S.stats.saves;
+    let h = '<div class="hd"><p class="eyebrow">The past seven days</p><h1 class="ttl">For you</h1><p class="sub">' +
+      (learned ? "Ordered by your " + learned + " reactions, freshness and coverage." : "Ordered by freshness and coverage. Like or pass on stories to tune it.") + "</p></div>";
+    if (!groups.length) return h + emptyHTML("Nothing this week yet", "Stories from the last seven days appear here.");
+    const top = groups[0], w = why(top.primary);
+    h += leadHTML(top, top.items.length > 1 ? top.items.length + " publications" : src(top.primary.source).name, w.length ? "You like " + w.join(" & ") : "");
+    return h + '<div class="sec"><h2>Next up</h2><span></span></div><div>' + groups.slice(1).map((g) => rowHTML(g, { why: true, rel: true })).join("") + "</div>";
+  }
+  function viewSaved() {
+    const items = [...S.reactions.entries()].filter(([, r]) => r.saved).map(([id, r]) => ({ a: S.byId.get(id) || (r.a ? { ...r.a, id } : null), at: t(r.at) })).filter((x) => x.a).sort((x, y) => y.at - x.at);
+    const h = '<div class="hd"><p class="eyebrow">Kept for later</p><h1 class="ttl">Saved</h1><p class="sub">' + items.length + (items.length === 1 ? " story" : " stories") + ". They stay here after they leave the feed.</p></div>";
+    return items.length ? h + '<div style="margin-top:18px">' + items.map(({ a }) => rowHTML(single(a), { rel: true })).join("") + "</div>" : h + emptyHTML("Nothing saved yet", "Open a story and tap the bookmark.");
+  }
+  function viewTaste() {
+    const entries = Object.entries(S.w), st = S.stats;
+    const pos = entries.filter(([, v]) => v > 0.08).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const neg = entries.filter(([, v]) => v < -0.08).sort((a, b) => a[1] - b[1]).slice(0, 8);
+    const tw = ([tag, v], negative) => '<div class="tw"><span class="l">' + esc(tagLabel(tag)) + '<span class="ty">' + TYPE_LABEL[tagType(tag)] + "</span></span>" +
+      '<span class="meter' + (negative ? " neg" : "") + '"><i style="width:' + Math.round(Math.abs(v) * 100) + '%"></i></span><button class="x" data-act="ignore" data-tag="' + esc(tag) + '" aria-label="Stop using ' + esc(tagLabel(tag)) + '">' + ICON.x + "</button></div>";
+    let h = '<div class="hd"><p class="eyebrow">How For you is ordered</p><h1 class="ttl">Taste</h1><p class="sub">Learned from ' + st.likes + " likes, " + st.passes + " passes, " + st.saves + " saves and " + st.reads + " opened stories.</p></div>";
+    h += '<div class="t-sec"><h3>Drawn to</h3>' + (pos.length ? pos.map((e) => tw(e, false)).join("") : '<p class="note">Like a few stories and this fills in.</p>') + "</div>";
+    h += '<div class="t-sec"><h3>Passing on</h3>' + (neg.length ? neg.map((e) => tw(e, true)).join("") : '<p class="note">Nothing yet. Tap the slashed circle on a story to push similar ones down.</p>') + "</div>";
+    const seeds = Object.keys(S.prefs.seed || {});
+    h += '<div class="t-sec"><h3>Starting points</h3>' + (seeds.length ? '<div class="seeds">' + seeds.map((tag) => '<span class="chip">' + esc(tagLabel(tag)) + '<button data-act="unseed" data-tag="' + esc(tag) + '" aria-label="Remove ' + esc(tagLabel(tag)) + '">' + ICON.x + "</button></span>").join("") + '</div><p class="note">A head start from what you have said you like. Your reactions soon outweigh it.</p>' : '<p class="note">None. Everything here comes from your reactions.</p>') + "</div>";
+    const ign = S.prefs.ignore || [];
+    if (ign.length) h += '<div class="t-sec"><h3>Ignored</h3><div class="seeds">' + ign.map((tag) => '<span class="chip">' + esc(tagLabel(tag)) + '<button data-act="unignore" data-tag="' + esc(tag) + '" aria-label="Use ' + esc(tagLabel(tag)) + ' again">' + ICON.x + "</button></span>").join("") + "</div></div>";
+    const hidden = new Set(S.prefs.hidden || []);
+    h += '<div class="t-sec"><h3>Publications</h3>' + Object.keys(SOURCES).map((k) => '<div class="pub"><label for="pub-' + k + '"><i class="dot" style="--h:' + src(k).hue + '"></i>' + esc(src(k).name) + '</label><span class="switch"><input type="checkbox" role="switch" id="pub-' + k + '" data-act="pub" data-src="' + k + '"' + (hidden.has(k) ? "" : " checked") + "><i></i></span></div>").join("") + "</div>";
+    h += '<div class="t-sec"><h3>On this phone</h3><p class="note">Your likes, passes and saves are kept on this phone only.</p><button class="plain-btn" data-act="reset">Reset taste</button></div>';
+    return h + statusLine();
+  }
+
+  function renderView() {
+    const el = $("#view"); S.order = [];
+    if (!S.loaded) {
+      if (S.failed) el.innerHTML = '<div class="hd"><h1 class="ttl">Mainspring</h1></div>' + emptyHTML("Couldn't load the stories", "Check your connection, then reopen the app.");
+      return;
+    }
+    el.innerHTML = S.view === "foryou" ? viewForYou() : S.view === "saved" ? viewSaved() : S.view === "taste" ? viewTaste() : viewToday();
+  }
+  function renderTabs() {
+    document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === S.view)));
+    const n = [...S.reactions.values()].filter((r) => r.saved).length;
+    $("#saved-n").textContent = n ? " " + n : "";
+  }
+
+  /* ================= Reader ================= */
+  function findArticle(id) { if (!id) return null; if (S.byId.has(id)) return S.byId.get(id); const r = S.reactions.get(id); return r?.a ? { ...r.a, id } : null; }
+  function renderSheet() {
+    const a = findArticle(S.sel), el = $("#sheet-in");
+    if (!a) { el.innerHTML = ""; return; }
+    const s = src(a.source), ms = t(a.published), r = S.reactions.get(a.id) || {};
+    const takes = takesOf(a).sort((x, y) => t(y.published) - t(x.published)), w = why(a);
+    let h = '<div class="r-top"><button class="r-close" data-act="close" aria-label="Close">' + ICON.close + "</button></div>";
+    if (a.image) h += photo(a, "ph-32 r-hero", "", true);
+    h += '<div class="r-body"><p class="eyebrow"><i class="dot" style="--h:' + s.hue + '"></i>' + esc(s.name) + (a.kind ? " · " + esc(a.kind) : "") + "</p>";
+    h += '<h1 class="r-title">' + esc(a.title) + "</h1>";
+    h += '<p class="r-by">' + (a.author ? "By " + esc(a.author) + " · " : "") + esc(shortDate(ms)) + ", " + hm(ms) + "</p>";
+    if (textOf(a)) h += '<p class="r-brief">' + esc(textOf(a)) + "</p>";
+    const chips = [...(a.brands || []), ...(a.topics || [])];
+    if (chips.length) h += '<div class="tags">' + chips.map((v) => '<button class="chip" data-act="tag" data-q="' + esc(v) + '">' + esc(v) + "</button>").join("") + "</div>";
+    if (takes.length) h += '<div class="r-sec"><h3>Also covered by ' + takes.length + "</h3>" + takes.map((x) => '<button class="take" data-id="' + esc(x.id) + '"><span class="r-src"><i class="dot" style="--h:' + src(x.source).hue + '"></i>' + esc(src(x.source).name) + '</span><span class="tt">' + esc(x.title) + '</span><span class="ta">' + esc([x.author, rel(t(x.published))].filter(Boolean).join(" · ")) + "</span></button>").join("") + "</div>";
+    if (w.length && S.view === "foryou") h += '<p class="r-why">In For you because you like <b>' + w.map(esc).join("</b> and <b>") + "</b>.</p>";
+    h += '</div><div class="r-bar">' +
+      '<button class="act" data-act="like" aria-pressed="' + (r.v === 1) + '" aria-label="' + (r.v === 1 ? "Liked" : "Like") + '">' + (r.v === 1 ? ICON.heartFill : ICON.heart) + "</button>" +
+      '<button class="act" data-act="pass" aria-pressed="' + (r.v === -1) + '" aria-label="Not for me">' + ICON.pass + "</button>" +
+      '<button class="act" data-act="save" aria-pressed="' + !!r.saved + '" aria-label="' + (r.saved ? "Saved" : "Save") + '">' + (r.saved ? ICON.saveFill : ICON.save) + "</button>" +
+      '<a class="go" id="go" href="' + esc(a.url) + '" target="_blank" rel="noopener" aria-label="Read the full story on ' + esc(s.name) + '"><span>Read the article</span>' + ICON.out + "</a></div>";
+    el.innerHTML = h;
+  }
+  const sheetOpen = () => $("#sheet").classList.contains("open");
+  function openSheet() {
+    const sh = $("#sheet"); renderSheet(); sh.scrollTop = 0;
+    if (!sheetOpen()) { sh.classList.add("open"); document.documentElement.classList.add("lock"); setTimeout(() => sh.querySelector(".r-close")?.focus({ preventScroll: true }), 60); }
+  }
+  function closeSheet() {
+    if (!sheetOpen()) return;
+    $("#sheet").classList.remove("open"); document.documentElement.classList.remove("lock");
+    const back = S.sel && document.querySelector('#view [data-id="' + CSS.escape(S.sel) + '"]');
+    if (back) back.focus({ preventScroll: true });
+  }
+  function render() { renderTabs(); renderView(); if (sheetOpen()) renderSheet(); }
+
+  /* ================= Toast ================= */
+  let toastTimer;
+  function toast(msg, undo) {
+    const el = $("#toast");
+    el.innerHTML = "<span>" + esc(msg) + "</span>" + (undo ? '<button id="undo">Undo</button>' : "");
+    el.hidden = false;
+    if (undo) $("#undo").onclick = () => { el.hidden = true; undo(); };
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, undo ? 6000 : 2600);
+  }
+
+  /* ================= Saving reactions ================= */
+  const snapOf = (a) => ({ title: a.title, url: a.url, source: a.source, author: a.author || "", published: a.published, brief: a.brief || "", teaser: a.teaser || "", image: a.image || "", kind: a.kind || "", brands: a.brands || [], topics: a.topics || [], story: a.story || "" });
+  function persistReactions() {
+    const cutoff = Date.now() - 90 * 864e5, obj = {};
+    for (const [id, r] of S.reactions) if (r.v || r.saved || t(r.at) > cutoff) obj[id] = r;
+    store.set("reactions", obj);
+  }
+  function react(a, patch, quiet) {
+    if (!a) return;
+    S.reactions.set(a.id, { ...(S.reactions.get(a.id) || {}), ...patch, at: new Date().toISOString(), a: snapOf(a) });
+    persistReactions(); computeWeights();
+    if (!quiet) render();
+  }
+  function savePrefs(next) { S.prefs = next; store.set("prefs", next); computeWeights(); render(); }
+
+  /* ================= Interaction ================= */
+  function select(id) {
+    S.sel = id;
+    const a = findArticle(id);
+    if (a && !S.reactions.get(id)?.read) react(a, { read: new Date().toISOString() }, true);
+    openSheet();
+  }
+  function setView(v) {
+    if (sheetOpen()) closeSheet();
+    if (S.view === v) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    S.view = v; store.set("view", v); render(); window.scrollTo({ top: 0 });
+  }
+  function toggle(kind) {
+    const a = findArticle(S.sel); if (!a) return;
+    const r = S.reactions.get(a.id) || {};
+    if (kind === "like") { react(a, { v: r.v === 1 ? 0 : 1 }); if (r.v !== 1) toast("Liked. More like this in For you."); }
+    if (kind === "save") { react(a, { saved: !r.saved }); toast(r.saved ? "Removed from Saved" : "Saved"); }
+    if (kind === "pass") {
+      if (r.v === -1) { react(a, { v: 0 }); return; }
+      const prev = r.v || 0; react(a, { v: -1 }); closeSheet();
+      toast("Hidden. Fewer stories like this.", () => react(a, { v: prev }));
+    }
+  }
+  const resetArm = { at: 0 };
+  document.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-view]"); if (tab) { setView(tab.dataset.view); return; }
+    const chip = e.target.closest(".chip[data-src]"); if (chip) { S.source = chip.dataset.src ? (S.source === chip.dataset.src ? null : chip.dataset.src) : null; renderView(); return; }
+    const act = e.target.closest("[data-act]");
+    if (act) {
+      const k = act.dataset.act;
+      if (k === "close") { closeSheet(); return; }
+      if (k === "search") {
+        if (sheetOpen()) closeSheet();
+        S.searchOpen = !S.searchOpen || !!S.q; S.view = "today"; render(); window.scrollTo({ top: 0 });
+        const q = $("#q"); if (q) q.focus(); return;
+      }
+      if (k === "like" || k === "save" || k === "pass") { toggle(k); return; }
+      if (k === "tag") { S.q = act.dataset.q; S.searchOpen = true; S.source = null; S.view = "today"; closeSheet(); render(); window.scrollTo({ top: 0 }); return; }
+      if (k === "ignore" || k === "unseed" || k === "unignore") {
+        const tag = act.dataset.tag, p = { seed: { ...(S.prefs.seed || {}) }, ignore: [...(S.prefs.ignore || [])], hidden: [...(S.prefs.hidden || [])] };
+        if (k === "ignore") { delete p.seed[tag]; if (!p.ignore.includes(tag)) p.ignore.push(tag); }
+        if (k === "unseed") delete p.seed[tag];
+        if (k === "unignore") p.ignore = p.ignore.filter((x) => x !== tag);
+        savePrefs(p); return;
+      }
+      if (k === "reset") {
+        if (Date.now() - resetArm.at > 4000) { resetArm.at = Date.now(); act.textContent = "Tap again to reset likes, passes and starting points"; return; }
+        for (const [id, r] of S.reactions) { if (r.saved) S.reactions.set(id, { ...r, v: 0 }); else S.reactions.delete(id); }
+        persistReactions(); savePrefs({ seed: {}, ignore: [], hidden: S.prefs.hidden || [] }); toast("Taste reset. Saved stories kept."); return;
+      }
+      if (k === "pub") return;
+    }
+    const item = e.target.closest("[data-id]"); if (item) select(item.dataset.id);
+  });
+  document.addEventListener("change", (e) => {
+    const el = e.target.closest('[data-act="pub"]'); if (!el) return;
+    const hidden = new Set(S.prefs.hidden || []);
+    if (el.checked) hidden.delete(el.dataset.src); else hidden.add(el.dataset.src);
+    if (S.source && hidden.has(S.source)) S.source = null;
+    savePrefs({ seed: { ...(S.prefs.seed || {}) }, ignore: [...(S.prefs.ignore || [])], hidden: [...hidden] });
+  });
+  let qTimer;
+  document.addEventListener("input", (e) => {
+    if (e.target.id !== "q") return;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(() => { S.q = e.target.value.trim(); const f = $("#feed"); if (!f) { renderView(); return; } S.order = []; f.innerHTML = todayFeed(); }, 180);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) {
+      if (e.key === "Escape" && e.target.id === "q") { S.q = ""; S.searchOpen = false; renderView(); }
+      if (e.key === "Enter" && e.target.id === "q") e.target.blur();
+      return;
+    }
+    const k = e.key.toLowerCase();
+    if (k === "escape") { closeSheet(); return; }
+    if (k === "j" || k === "k") { if (!S.order.length) return; const i = S.order.indexOf(S.sel); select(S.order[i < 0 ? 0 : Math.min(S.order.length - 1, Math.max(0, i + (k === "j" ? 1 : -1)))]); e.preventDefault(); }
+    if (!sheetOpen()) return;
+    if (k === "o") $("#go")?.click();
+    if (k === "l") toggle("like"); if (k === "s") toggle("save"); if (k === "x") toggle("pass");
+  });
+  // A cover photo that fails to load: tiles show the publication name, rows and the reader drop the photo.
+  document.addEventListener("error", (e) => { if (e.target.tagName === "IMG") e.target.closest(".ph")?.classList.add("gone"); }, true);
+  window.addEventListener("scroll", () => $("#bar").classList.toggle("scrolled", window.scrollY > 4), { passive: true });
+
+  /* ================= Dial mark ================= */
+  (function dial() {
+    let h = "";
+    for (let i = 0; i < 12; i++) { const long = i % 3 === 0; h += '<line x1="16" y1="2.6" x2="16" y2="' + (long ? 5.6 : 4.2) + '" fill="none" stroke="currentColor" stroke-width="' + (long ? 1.8 : 1) + '" transform="rotate(' + i * 30 + ' 16 16)"/>'; }
+    $("#ticks").innerHTML = h;
+    const set = () => { const d = new Date(), m = d.getMinutes() + d.getSeconds() / 60; $("#hh").style.transform = "rotate(" + ((d.getHours() % 12) * 30 + m * 0.5) + "deg)"; $("#mh").style.transform = "rotate(" + m * 6 + "deg)"; $("#sh").style.animationDelay = "-" + (d.getSeconds() + d.getMilliseconds() / 1000) + "s"; };
+    set(); setInterval(set, 30000);
+  })();
+  $("#boot-date").textContent = longDate(Date.now());
+
+  /* ================= Data ================= */
+  async function load() {
+    try {
+      const res = await fetch("feed.json?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error(res.status);
+      const feed = await res.json();
+      S.feed = feed;
+      if (feed.sources && Object.keys(feed.sources).length) SOURCES = { ...SOURCES, ...feed.sources };
+      S.articles = (feed.items || []).filter((a) => a.title && a.url);
+      S.byId = new Map(S.articles.map((a) => [a.id, a]));
+      S.loaded = true; S.failed = false; S.loadedAt = Date.now();
+      computeWeights(); render();
+    } catch (e) {
+      S.failed = !S.loaded; render();
+    }
+  }
+  const markVisit = () => store.set("lastSeen", Date.now());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") markVisit();
+    else if (Date.now() - S.loadedAt > 10 * 60e3) load();
+  });
+  window.addEventListener("pagehide", markVisit);
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  renderTabs();
+  load();
+})();
+</script>
+</body>
+</html>

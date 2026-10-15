@@ -1,0 +1,34 @@
+name: Refresh feeds
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"   # every two hours
+  workflow_dispatch:          # adds a "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node fetch.mjs
+      - name: Save the new stories
+        run: |
+          git config user.name "mainspring-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add feed.json
+          git diff --cached --quiet && echo "Nothing new" && exit 0
+          git commit -m "Refresh feeds"
+          git push

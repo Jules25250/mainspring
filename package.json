@@ -1,0 +1,13 @@
+{
+  "name": "mainspring",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Julian's personal watch-news reader",
+  "type": "module",
+  "scripts": {
+    "refresh": "node fetch.mjs"
+  },
+  "dependencies": {
+    "rss-parser": "3.13.0"
+  }
+}

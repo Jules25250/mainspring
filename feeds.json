@@ -1,0 +1,37 @@
+{
+  "sources": [
+    { "key": "fratello", "name": "Fratello", "site": "fratellowatches.com", "hue": 28,
+      "feeds": ["https://www.fratellowatches.com/feed/"] },
+    { "key": "ablogtowatch", "name": "aBlogtoWatch", "site": "ablogtowatch.com", "hue": 205,
+      "feeds": ["https://www.ablogtowatch.com/feed/"] },
+    { "key": "timeandtide", "name": "Time+Tide", "site": "timeandtidewatches.com", "hue": 165,
+      "feeds": ["https://timeandtidewatches.com/feed/"] },
+    { "key": "monochrome", "name": "Monochrome", "site": "monochrome-watches.com", "hue": 265,
+      "feeds": ["https://monochrome-watches.com/feed/"] },
+    { "key": "sjx", "name": "SJX", "site": "watchesbysjx.com", "hue": 5,
+      "feeds": ["https://watchesbysjx.com/feed"] },
+    { "key": "wornandwound", "name": "Worn & Wound", "site": "wornandwound.com", "hue": 95,
+      "feeds": ["https://wornandwound.com/feed/"] },
+    { "key": "revolution", "name": "Revolution", "site": "revolutionwatch.com", "hue": 335,
+      "feeds": ["https://www.revolutionwatch.com/feed/"] },
+    { "key": "deployant", "name": "Deployant", "site": "deployant.com", "hue": 60,
+      "feeds": ["https://deployant.com/feed/"],
+      "skip": { "categories": "Food and Drinks|Horological Lifestyle|Champagne|Wine" } },
+    { "key": "watchonista", "name": "Watchonista", "site": "watchonista.com", "hue": 300,
+      "feeds": ["https://www.watchonista.com/rss.xml"],
+      "skip": { "url": "/editorial/(pursuits|garage|art-drinking|tailor)/" } },
+    { "key": "quillandpad", "name": "Quill & Pad", "site": "quillandpad.com", "hue": 135,
+      "feeds": ["https://quillandpad.com/feed/"] },
+    { "key": "watchpro", "name": "WatchPro", "site": "watchpro.com", "hue": 230,
+      "feeds": ["https://www.watchpro.com/feed/"],
+      "skip": {
+        "categories": "\\bretail\\b|Tourist Tax|\\bBRC\\b|UK Protection|watchpro uk awards|\\bnaj\\b|women in watches",
+        "title": "issue out now|cast your vote|last chance to vote|shortlist|consumer confidence|tax burden|energy costs"
+      } },
+    { "key": "teddybaldassarre", "name": "Teddy Baldassarre", "site": "teddybaldassarre.com", "hue": 182,
+      "feeds": ["https://teddybaldassarre.com/blogs/watches.atom", "https://teddybaldassarre.com/blogs/videos.atom"],
+      "skip": { "title": "^watch shopping with" } },
+    { "key": "jackforster", "name": "Jack Forster", "site": "jackforster.substack.com", "hue": 318,
+      "feeds": ["https://jackforster.substack.com/feed"] }
+  ]
+}
